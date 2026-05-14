@@ -43751,6 +43751,18 @@ var HEADERS = {
   Accept: "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
   Referer: "https://lyzem.com/"
 };
+var FILTER_MAP = {
+  all: { lyzemFilter: "all", prefix: "" },
+  channels: { lyzemFilter: "channels", prefix: "" },
+  groups: { lyzemFilter: "groups", prefix: "" },
+  bots: { lyzemFilter: "bots", prefix: "" },
+  telegraph: { lyzemFilter: "telegraph", prefix: "" },
+  messages: { lyzemFilter: "messages", prefix: "" },
+  videos: { lyzemFilter: "all", prefix: "\u0641\u064A\u062F\u064A\u0648" },
+  software: { lyzemFilter: "all", prefix: "\u0628\u0631\u0646\u0627\u0645\u062C \u062A\u0637\u0628\u064A\u0642" },
+  images: { lyzemFilter: "all", prefix: "\u0635\u0648\u0631" },
+  links: { lyzemFilter: "messages", prefix: "\u0631\u0648\u0627\u0628\u0637" }
+};
 function parseType(raw) {
   switch (raw.trim().toLowerCase()) {
     case "channel":
@@ -43768,18 +43780,18 @@ function parseType(raw) {
   }
 }
 async function searchTelegram(query, page = 1, filter = "all", perPage = 25) {
+  const { lyzemFilter, prefix } = FILTER_MAP[filter] ?? FILTER_MAP["all"];
+  const actualQuery = prefix ? `${prefix} ${query}` : query;
   const params = new URLSearchParams({
-    q: query,
-    f: filter,
+    q: actualQuery,
+    f: lyzemFilter,
     l: "",
     p: String(page),
     "per-page": String(perPage)
   });
   const url = `https://lyzem.com/search?${params.toString()}`;
   const res = await fetch(url, { headers: HEADERS });
-  if (!res.ok) {
-    throw new Error(`\u0641\u0634\u0644 \u0627\u0644\u0627\u062A\u0635\u0627\u0644 \u0628\u062E\u0627\u062F\u0645 \u0627\u0644\u0628\u062D\u062B: ${res.status}`);
-  }
+  if (!res.ok) throw new Error(`\u0641\u0634\u0644 \u0627\u0644\u0627\u062A\u0635\u0627\u0644 \u0628\u062E\u0627\u062F\u0645 \u0627\u0644\u0628\u062D\u062B: ${res.status}`);
   const html = await res.text();
   const root = (0, import_node_html_parser.parse)(html);
   const infoText = root.querySelector(".info-line p.is-size-6")?.text?.trim() ?? "";
@@ -43798,7 +43810,7 @@ async function searchTelegram(query, page = 1, filter = "all", perPage = 25) {
     const description = item.querySelector(".search-result-descr a")?.text?.trim() ?? "";
     return { title, username, description, type, link };
   }).filter((r) => r.title.length > 0);
-  return { results, total, timeTaken, query, page, perPage, filter };
+  return { results, total, timeTaken, query, displayQuery: query, page, perPage, filter };
 }
 
 // src/bot/verify.ts
@@ -43864,13 +43876,17 @@ var FILTER_LABEL = {
   groups: "\u{1F465} \u0627\u0644\u0645\u062C\u0645\u0648\u0639\u0627\u062A",
   bots: "\u{1F916} \u0627\u0644\u0628\u0648\u062A\u0627\u062A",
   telegraph: "\u{1F4F0} Telegraph",
-  messages: "\u{1F4AC} \u0627\u0644\u0631\u0633\u0627\u0626\u0644"
+  messages: "\u{1F4AC} \u0627\u0644\u0631\u0633\u0627\u0626\u0644",
+  videos: "\u{1F3AC} \u0641\u064A\u062F\u064A\u0648",
+  software: "\u{1F4BF} \u0628\u0631\u0627\u0645\u062C",
+  images: "\u{1F5BC} \u0635\u0648\u0631",
+  links: "\u{1F517} \u0631\u0648\u0627\u0628\u0637"
 };
 var DEV_BUTTON = import_telegraf.Markup.button.url("\u{1F468}\u200D\u{1F4BB} \u0627\u0644\u0645\u0637\u0648\u0631", "https://t.me/a_l_s_g_r_bot");
 var MAX_QUERY_LEN = 44;
 var WELCOME = `\u{1F50D} *\u0645\u0631\u062D\u0628\u0627\u064B \u0641\u064A \u0628\u0648\u062A \u0628\u062D\u062B \u062A\u064A\u0644\u064A\u062C\u0631\u0627\u0645*
 
-\u064A\u0645\u0643\u0646\u0643 \u0627\u0644\u0628\u062D\u062B \u0639\u0646 \u0627\u0644\u0642\u0646\u0648\u0627\u062A \u0648\u0627\u0644\u0645\u062C\u0645\u0648\u0639\u0627\u062A \u0648\u0627\u0644\u0628\u0648\u062A\u0627\u062A \u0648\u0627\u0644\u0645\u0642\u0627\u0644\u0627\u062A \u0648\u0627\u0644\u0631\u0633\u0627\u0626\u0644\\.
+\u064A\u0645\u0643\u0646\u0643 \u0627\u0644\u0628\u062D\u062B \u0639\u0646 \u0627\u0644\u0642\u0646\u0648\u0627\u062A \u0648\u0627\u0644\u0645\u062C\u0645\u0648\u0639\u0627\u062A \u0648\u0627\u0644\u0628\u0648\u062A\u0627\u062A \u0648\u0627\u0644\u0641\u064A\u062F\u064A\u0648 \u0648\u0627\u0644\u0628\u0631\u0627\u0645\u062C \u0648\u0627\u0644\u0635\u0648\u0631 \u0648\u0627\u0644\u0631\u0648\u0627\u0628\u0637\\.
 
 *\u0643\u064A\u0641\u064A\u0629 \u0627\u0644\u0627\u0633\u062A\u062E\u062F\u0627\u0645:*
 \u2022 \u0623\u0631\u0633\u0644 \u0623\u064A \u0646\u0635 \u0644\u0644\u0628\u062D\u062B \u0645\u0628\u0627\u0634\u0631\u0629
@@ -43881,27 +43897,25 @@ _\u0645\u062F\u0639\u0648\u0645 \u0645\u0646 lyzem\\.com_`;
 var HELP = `*\u{1F4D6} \u0627\u0644\u0645\u0633\u0627\u0639\u062F\u0629:*
 
 *\u0627\u0644\u0628\u062D\u062B:*
-\u0623\u0631\u0633\u0644 \u0623\u064A \u0646\u0635 \u0648\u0633\u0623\u0628\u062D\u062B \u0641\u0648\u0631\u0627\u064B \u0641\u064A \u0642\u0646\u0648\u0627\u062A \u0648\u0645\u062C\u0645\u0648\u0639\u0627\u062A \u062A\u064A\u0644\u064A\u062C\u0631\u0627\u0645\\.
+\u0623\u0631\u0633\u0644 \u0623\u064A \u0646\u0635 \u0648\u0633\u0623\u0628\u062D\u062B \u0641\u0648\u0631\u0627\u064B \u0641\u064A \u062A\u064A\u0644\u064A\u062C\u0631\u0627\u0645\\.
 
 *\u0627\u0644\u0641\u0644\u0627\u062A\u0631 \u0627\u0644\u0645\u062A\u0627\u062D\u0629:*
-\u{1F4E2} \u0627\u0644\u0642\u0646\u0648\u0627\u062A \u2014 \u{1F465} \u0627\u0644\u0645\u062C\u0645\u0648\u0639\u0627\u062A \u2014 \u{1F916} \u0627\u0644\u0628\u0648\u062A\u0627\u062A
+\u{1F50D} \u0627\u0644\u0643\u0644 \u2014 \u{1F4E2} \u0627\u0644\u0642\u0646\u0648\u0627\u062A \u2014 \u{1F465} \u0627\u0644\u0645\u062C\u0645\u0648\u0639\u0627\u062A \u2014 \u{1F916} \u0627\u0644\u0628\u0648\u062A\u0627\u062A
 \u{1F4F0} Telegraph \u2014 \u{1F4AC} \u0627\u0644\u0631\u0633\u0627\u0626\u0644
+\u{1F3AC} \u0641\u064A\u062F\u064A\u0648 \u2014 \u{1F4BF} \u0628\u0631\u0627\u0645\u062C \u2014 \u{1F5BC} \u0635\u0648\u0631 \u2014 \u{1F517} \u0631\u0648\u0627\u0628\u0637
 
 *\u0623\u0645\u062B\u0644\u0629:*
-\u2022 \`\u0628\u0631\u0645\u062C\u0629\`
-\u2022 \`\u0623\u062E\u0628\u0627\u0631 \u0627\u0644\u0633\u0639\u0648\u062F\u064A\u0629\`
+\u2022 \`\u0628\u0631\u0645\u062C\u0629\` \u062B\u0645 \u0627\u0636\u063A\u0637 \u{1F3AC} \u0641\u064A\u062F\u064A\u0648
+\u2022 \`\u0623\u062E\u0628\u0627\u0631\` \u062B\u0645 \u0627\u0636\u063A\u0637 \u{1F517} \u0631\u0648\u0627\u0628\u0637
 \u2022 /search \u062A\u0642\u0646\u064A\u0629
 
 _\u0627\u0644\u0628\u064A\u0627\u0646\u0627\u062A \u0645\u0646 lyzem\\.com \u2014 \u064A\u062A\u0645 \u062A\u0635\u0641\u064A\u0629 \u0627\u0644\u062D\u0633\u0627\u0628\u0627\u062A \u0627\u0644\u0645\u062D\u0630\u0648\u0641\u0629 \u062A\u0644\u0642\u0627\u0626\u064A\u0627\u064B_`;
 bot.start(async (ctx) => {
   try {
-    await ctx.replyWithMarkdownV2(
-      WELCOME,
-      {
-        ...import_telegraf.Markup.keyboard([["\u{1F50D} \u0628\u062D\u062B", "\u2753 \u0645\u0633\u0627\u0639\u062F\u0629"]]).resize(),
-        ...import_telegraf.Markup.inlineKeyboard([[DEV_BUTTON]])
-      }
-    );
+    await ctx.replyWithMarkdownV2(WELCOME, {
+      ...import_telegraf.Markup.keyboard([["\u{1F50D} \u0628\u062D\u062B", "\u2753 \u0645\u0633\u0627\u0639\u062F\u0629"]]).resize(),
+      ...import_telegraf.Markup.inlineKeyboard([[DEV_BUTTON]])
+    });
   } catch (err) {
     logger.error({ err }, "/start error");
   }
@@ -43916,10 +43930,7 @@ bot.help(async (ctx) => {
 bot.command("search", async (ctx) => {
   const query = ctx.message.text.replace(/^\/search\s*/i, "").trim();
   if (!query) {
-    await ctx.reply(
-      "\u26A0\uFE0F \u0623\u0631\u0633\u0644 \u0643\u0644\u0645\u0629 \u0627\u0644\u0628\u062D\u062B \u0628\u0639\u062F \u0627\u0644\u0623\u0645\u0631.\n\u0645\u062B\u0627\u0644: /search \u0628\u0631\u0645\u062C\u0629",
-      import_telegraf.Markup.inlineKeyboard([[DEV_BUTTON]])
-    );
+    await ctx.reply("\u26A0\uFE0F \u0623\u0631\u0633\u0644 \u0643\u0644\u0645\u0629 \u0627\u0644\u0628\u062D\u062B \u0628\u0639\u062F \u0627\u0644\u0623\u0645\u0631.\n\u0645\u062B\u0627\u0644: /search \u0628\u0631\u0645\u062C\u0629", import_telegraf.Markup.inlineKeyboard([[DEV_BUTTON]]));
     return;
   }
   await runSearch(ctx, query, 1, "all", false);
@@ -43980,9 +43991,7 @@ _\u064A\u062A\u0645 \u0627\u0644\u062A\u062D\u0642\u0642 \u0645\u0646 \u0627\u06
       try {
         await ctx.editMessageText(text, opts);
       } catch (editErr) {
-        if (!editErr?.description?.includes("message is not modified")) {
-          await ctx.reply(text, opts);
-        }
+        if (!editErr?.description?.includes("message is not modified")) await ctx.reply(text, opts);
       }
     } else {
       if (loadingMsgId) {
@@ -43998,18 +44007,11 @@ _\u064A\u062A\u0645 \u0627\u0644\u062A\u062D\u0642\u0642 \u0645\u0646 \u0627\u06
   } catch (err) {
     logger.error({ err, query, page, filter }, "Search error");
     const errText = "\u26A0\uFE0F \u062D\u062F\u062B \u062E\u0637\u0623 \u0623\u062B\u0646\u0627\u0621 \u0627\u0644\u0628\u062D\u062B\\. \u062D\u0627\u0648\u0644 \u0645\u0631\u0629 \u0623\u062E\u0631\u0649\\.";
-    const errOpts = {
-      parse_mode: "MarkdownV2",
-      ...import_telegraf.Markup.inlineKeyboard([[DEV_BUTTON]])
-    };
+    const errOpts = { parse_mode: "MarkdownV2", ...import_telegraf.Markup.inlineKeyboard([[DEV_BUTTON]]) };
     try {
-      if (editMessage) {
-        await ctx.editMessageText(errText, errOpts);
-      } else if (loadingMsgId) {
-        await ctx.telegram.editMessageText(ctx.chat.id, loadingMsgId, void 0, errText, errOpts);
-      } else {
-        await ctx.reply(errText, errOpts);
-      }
+      if (editMessage) await ctx.editMessageText(errText, errOpts);
+      else if (loadingMsgId) await ctx.telegram.editMessageText(ctx.chat.id, loadingMsgId, void 0, errText, errOpts);
+      else await ctx.reply(errText, errOpts);
     } catch (e) {
       logger.error({ e }, "Failed to send error message");
     }
@@ -44020,12 +44022,13 @@ function buildResultMessage(res) {
     return `\u274C *\u0644\u0627 \u062A\u0648\u062C\u062F \u0646\u062A\u0627\u0626\u062C \u0646\u0634\u0637\u0629*
 
 \u0644\u0645 \u064A\u064F\u0639\u062B\u0631 \u0639\u0644\u0649 \u0646\u062A\u0627\u0626\u062C \u0644\u0644\u0628\u062D\u062B \u0639\u0646: *${esc(res.query)}*
-_\u0631\u0628\u0645\u0627 \u062A\u0643\u0648\u0646 \u062C\u0645\u064A\u0639 \u0627\u0644\u0646\u062A\u0627\u0626\u062C \u0645\u062D\u0630\u0648\u0641\u0629 \u0623\u0648 \u062C\u0631\u0651\u0628 \u0643\u0644\u0645\u0627\u062A \u0645\u062E\u062A\u0644\u0641\u0629\\._`;
+_\u062C\u0631\u0651\u0628 \u0641\u0644\u062A\u0631\u0627\u064B \u0645\u062E\u062A\u0644\u0641\u0627\u064B \u0623\u0648 \u0643\u0644\u0645\u0627\u062A \u0623\u062E\u0631\u0649\\._`;
   }
   const totalPages = res.total > 0 ? Math.ceil(res.total / res.perPage) : 1;
   const timeStr = res.timeTaken ? ` \\| ${esc(res.timeTaken)}` : "";
+  const filterLabel = FILTER_LABEL[res.filter] ?? "";
   const filterStr = res.filter !== "all" ? `
-\u{1F3F7} \u0627\u0644\u0641\u0644\u062A\u0631: ${esc(FILTER_LABEL[res.filter])}` : "";
+\u{1F3F7} \u0627\u0644\u0646\u0648\u0639: ${esc(filterLabel)}` : "";
   const header = `\u{1F50D} *\u0646\u062A\u0627\u0626\u062C \u0627\u0644\u0628\u062D\u062B \u0639\u0646: ${esc(res.query.slice(0, 40))}*
 \u{1F4CA} ${res.total.toLocaleString("ar")} \u0646\u062A\u064A\u062C\u0629 \\| \u0635\u0641\u062D\u0629 ${res.page} \u0645\u0646 ${totalPages}${timeStr}${filterStr}
 \u2705 _\u062A\u0645 \u062A\u0635\u0641\u064A\u0629 \u0627\u0644\u062D\u0633\u0627\u0628\u0627\u062A \u0627\u0644\u0645\u062D\u0630\u0648\u0641\u0629_
@@ -44047,25 +44050,20 @@ _\u0631\u0628\u0645\u0627 \u062A\u0643\u0648\u0646 \u062C\u0645\u064A\u0639 \u06
 function buildKeyboard(query, page, filter, total, perPage) {
   const totalPages = total > 0 ? Math.ceil(total / perPage) : 1;
   const navRow = [];
-  if (page > 1) {
-    navRow.push(import_telegraf.Markup.button.callback("\u2B05\uFE0F \u0627\u0644\u0633\u0627\u0628\u0642", cbData(page - 1, filter, query)));
-  }
-  if (page < totalPages) {
-    navRow.push(import_telegraf.Markup.button.callback("\u27A1\uFE0F \u0627\u0644\u062A\u0627\u0644\u064A", cbData(page + 1, filter, query)));
-  }
-  const filters = ["all", "channels", "groups", "bots", "telegraph", "messages"];
-  const row1 = [];
-  const row2 = [];
-  filters.forEach((f, i) => {
+  if (page > 1) navRow.push(import_telegraf.Markup.button.callback("\u2B05\uFE0F \u0627\u0644\u0633\u0627\u0628\u0642", cbData(page - 1, filter, query)));
+  if (page < totalPages) navRow.push(import_telegraf.Markup.button.callback("\u27A1\uFE0F \u0627\u0644\u062A\u0627\u0644\u064A", cbData(page + 1, filter, query)));
+  const row1 = ["all", "channels", "groups", "bots"];
+  const row2 = ["telegraph", "messages", "videos"];
+  const row3 = ["software", "images", "links"];
+  const makeRow = (filters) => filters.map((f) => {
     const label = f === filter ? `\u2705 ${FILTER_LABEL[f]}` : FILTER_LABEL[f];
-    const btn = import_telegraf.Markup.button.callback(label, cbData(1, f, query));
-    if (i < 3) row1.push(btn);
-    else row2.push(btn);
+    return import_telegraf.Markup.button.callback(label, cbData(1, f, query));
   });
   const rows = [];
   if (navRow.length > 0) rows.push(navRow);
-  rows.push(row1);
-  rows.push(row2);
+  rows.push(makeRow(row1));
+  rows.push(makeRow(row2));
+  rows.push(makeRow(row3));
   rows.push([DEV_BUTTON]);
   return import_telegraf.Markup.inlineKeyboard(rows);
 }
