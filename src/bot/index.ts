@@ -28,6 +28,9 @@ const FILTER_LABEL: Record<FilterType, string> = {
   messages:  "💬 الرسائل",
 };
 
+// Developer button shown at the bottom of every reply
+const DEV_BUTTON = Markup.button.url("👨‍💻 المطور", "https://t.me/a_l_s_g_r_bot");
+
 // Maximum bytes for callback_data is 64
 const MAX_QUERY_LEN = 44;
 
@@ -66,7 +69,10 @@ bot.start(async (ctx) => {
   try {
     await ctx.replyWithMarkdownV2(
       WELCOME,
-      Markup.keyboard([["🔍 بحث", "❓ مساعدة"]]).resize(),
+      {
+        ...Markup.keyboard([["🔍 بحث", "❓ مساعدة"]]).resize(),
+        ...Markup.inlineKeyboard([[DEV_BUTTON]]),
+      },
     );
   } catch (err) {
     logger.error({ err }, "/start error");
@@ -75,7 +81,7 @@ bot.start(async (ctx) => {
 
 bot.help(async (ctx) => {
   try {
-    await ctx.replyWithMarkdownV2(HELP);
+    await ctx.replyWithMarkdownV2(HELP, Markup.inlineKeyboard([[DEV_BUTTON]]));
   } catch (err) {
     logger.error({ err }, "/help error");
   }
@@ -84,18 +90,29 @@ bot.help(async (ctx) => {
 bot.command("search", async (ctx) => {
   const query = ctx.message.text.replace(/^\/search\s*/i, "").trim();
   if (!query) {
-    await ctx.reply("⚠️ أرسل كلمة البحث بعد الأمر.\nمثال: /search برمجة");
+    await ctx.reply(
+      "⚠️ أرسل كلمة البحث بعد الأمر.\nمثال: /search برمجة",
+      Markup.inlineKeyboard([[DEV_BUTTON]]),
+    );
     return;
   }
   await runSearch(ctx, query, 1, "all", false);
 });
 
 bot.hears("❓ مساعدة", async (ctx) => {
-  try { await ctx.replyWithMarkdownV2(HELP); } catch (err) { logger.error({ err }, "help hears error"); }
+  try {
+    await ctx.replyWithMarkdownV2(HELP, Markup.inlineKeyboard([[DEV_BUTTON]]));
+  } catch (err) {
+    logger.error({ err }, "help hears error");
+  }
 });
 
 bot.hears("🔍 بحث", async (ctx) => {
-  try { await ctx.reply("🔍 أرسل كلمة البحث الآن:"); } catch (err) { logger.error({ err }, "search hears error"); }
+  try {
+    await ctx.reply("🔍 أرسل كلمة البحث الآن:", Markup.inlineKeyboard([[DEV_BUTTON]]));
+  } catch (err) {
+    logger.error({ err }, "search hears error");
+  }
 });
 
 // ─── Free text ────────────────────────────────────────────────────────────────
@@ -126,7 +143,6 @@ async function runSearch(
 ) {
   let loadingMsgId: number | undefined;
 
-  // Show a loading message for fresh searches
   if (!editMessage) {
     try {
       const loading = await ctx.reply(
@@ -141,10 +157,7 @@ async function runSearch(
 
   try {
     const res = await searchTelegram(query, page, filter, 25);
-
-    // Filter out deleted/deactivated accounts
     const activeResults = await filterActiveResults(res.results);
-
     const displayRes = { ...res, results: activeResults };
     const text = buildResultMessage(displayRes);
     const keyboard = buildKeyboard(query, page, filter, res.total, res.perPage);
@@ -158,7 +171,6 @@ async function runSearch(
       try {
         await ctx.editMessageText(text, opts);
       } catch (editErr: any) {
-        // "message is not modified" → ignore; other errors → send new message
         if (!editErr?.description?.includes("message is not modified")) {
           await ctx.reply(text, opts);
         }
@@ -177,7 +189,10 @@ async function runSearch(
   } catch (err) {
     logger.error({ err, query, page, filter }, "Search error");
     const errText = "⚠️ حدث خطأ أثناء البحث\\. حاول مرة أخرى\\.";
-    const errOpts = { parse_mode: "MarkdownV2" as const };
+    const errOpts = {
+      parse_mode: "MarkdownV2" as const,
+      ...Markup.inlineKeyboard([[DEV_BUTTON]]),
+    };
 
     try {
       if (editMessage) {
@@ -221,7 +236,7 @@ function buildResultMessage(res: Awaited<ReturnType<typeof searchTelegram>> & { 
   return header + lines.join("\n\n");
 }
 
-// ─── Keyboard builder ─────────────────────────────────────────────────────────
+// ─── Keyboard builder ──────────────────────────────────────────────────────────
 function buildKeyboard(
   query: string,
   page: number,
@@ -249,10 +264,11 @@ function buildKeyboard(
     if (i < 3) row1.push(btn); else row2.push(btn);
   });
 
-  const rows: ReturnType<typeof Markup.button.callback>[][] = [];
+  const rows: (ReturnType<typeof Markup.button.callback> | ReturnType<typeof Markup.button.url>)[][] = [];
   if (navRow.length > 0) rows.push(navRow);
   rows.push(row1);
   rows.push(row2);
+  rows.push([DEV_BUTTON]);
 
   return Markup.inlineKeyboard(rows);
 }
@@ -275,3 +291,4 @@ export async function startBot() {
   process.once("SIGINT", () => bot.stop("SIGINT"));
   process.once("SIGTERM", () => bot.stop("SIGTERM"));
 }
+
