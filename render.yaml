@@ -1,0 +1,15 @@
+services:
+  - type: web
+    name: telegram-search-bot
+    env: node
+    region: frankfurt
+    plan: free
+    buildCommand: npm install && npm run build
+    startCommand: node --enable-source-maps ./dist/index.mjs
+    envVars:
+      - key: PORT
+        value: 10000
+      - key: TELEGRAM_BOT_TOKEN
+        sync: false
+      - key: NODE_ENV
+        value: production
