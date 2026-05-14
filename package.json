@@ -5,9 +5,7 @@
   "type": "module",
   "engines": { "node": ">=18" },
   "scripts": {
-    "build": "node ./build.mjs",
-    "start": "node --enable-source-maps ./dist/index.mjs",
-    "dev": "node ./build.mjs && node --enable-source-maps ./dist/index.mjs"
+    "start": "node --enable-source-maps ./dist/index.mjs"
   },
   "dependencies": {
     "cors": "^2",
@@ -17,13 +15,5 @@
     "pino-http": "^10",
     "telegraf": "^4.16.3",
     "cookie-parser": "^1.4.7"
-  },
-  "devDependencies": {
-    "@types/cookie-parser": "^1.4.10",
-    "@types/cors": "^2.8.19",
-    "@types/express": "^5.0.6",
-    "@types/node": "^22",
-    "esbuild": "^0.27.3",
-    "typescript": "^5.9.2"
   }
 }
