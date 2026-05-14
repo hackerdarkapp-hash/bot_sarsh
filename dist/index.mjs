@@ -44092,11 +44092,29 @@ if (Number.isNaN(port) || port <= 0) {
 }
 app_default.listen(port, () => {
   logger.info({ port }, "Server listening");
+  startBot().catch((err) => {
+    logger.error({ err }, "Bot failed to start");
+    process.exit(1);
+  });
+  startKeepAlive();
 });
-startBot().catch((err) => {
-  logger.error({ err }, "Bot failed to start");
-  process.exit(1);
-});
+function startKeepAlive() {
+  const url = process.env["RENDER_EXTERNAL_URL"];
+  if (!url) {
+    logger.info("Keep-alive disabled (no RENDER_EXTERNAL_URL)");
+    return;
+  }
+  const INTERVAL_MS = 14 * 60 * 1e3;
+  setInterval(async () => {
+    try {
+      const res = await fetch(`${url}/api/healthz`);
+      logger.info({ status: res.status }, "Keep-alive ping sent");
+    } catch (err) {
+      logger.warn({ err }, "Keep-alive ping failed");
+    }
+  }, INTERVAL_MS);
+  logger.info({ url, intervalMin: 14 }, "Keep-alive started");
+}
 /*! Bundled license information:
 
 depd/index.js:
