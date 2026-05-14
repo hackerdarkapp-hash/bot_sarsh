@@ -1,41 +1,31 @@
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { build as esbuild } from "esbuild";
+import { build } from "esbuild";
 import { rm } from "node:fs/promises";
 
-const artifactDir = path.dirname(fileURLToPath(import.meta.url));
+const dir = path.dirname(fileURLToPath(import.meta.url));
 
-async function buildAll() {
-  const distDir = path.resolve(artifactDir, "dist");
-  await rm(distDir, { recursive: true, force: true });
+await rm(path.join(dir, "dist"), { recursive: true, force: true });
 
-  await esbuild({
-    entryPoints: [path.resolve(artifactDir, "src/index.ts")],
-    platform: "node",
-    bundle: true,
-    format: "esm",
-    outdir: distDir,
-    outExtension: { ".js": ".mjs" },
-    logLevel: "info",
-    external: [
-      "*.node", "sharp", "better-sqlite3", "sqlite3", "canvas",
-      "bcrypt", "argon2", "fsevents", "bufferutil", "utf-8-validate",
-      "pg-native", "oracledb", "mongodb-client-encryption"
-    ],
-    sourcemap: "linked",
-    banner: {
-      js: `import { createRequire as __crReq } from "node:module";
-import __path from "node:path";
-import __url from "node:url";
-globalThis.require = __crReq(import.meta.url);
-globalThis.__filename = __url.fileURLToPath(import.meta.url);
-globalThis.__dirname = __path.dirname(globalThis.__filename);`
-    },
-  });
-}
-
-buildAll().catch((err) => {
-  console.error(err);
-  process.exit(1);
+await build({
+  entryPoints: [path.join(dir, "src/index.ts")],
+  platform: "node",
+  bundle: true,
+  format: "esm",
+  outdir: path.join(dir, "dist"),
+  outExtension: { ".js": ".mjs" },
+  logLevel: "info",
+  external: ["*.node"],
+  sourcemap: "linked",
+  banner: {
+    js: [
+      "import { createRequire as __crReq } from \"node:module\";",
+      "import __nodePath from \"node:path\";",
+      "import __nodeUrl from \"node:url\";",
+      "globalThis.require = __crReq(import.meta.url);",
+      "globalThis.__filename = __nodeUrl.fileURLToPath(import.meta.url);",
+      "globalThis.__dirname = __nodePath.dirname(globalThis.__filename);"
+    ].join("\n")
+  }
 });
 
