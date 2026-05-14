@@ -1,15 +1,15 @@
 services:
   - type: web
-    name: telegram-search-bot
+    name: bot_sarsh-3
     env: node
-    region: frankfurt
+    region: oregon
     plan: free
     buildCommand: npm install && npm run build
-    startCommand: node --enable-source-maps ./dist/index.mjs
+    startCommand: npm run start
     envVars:
       - key: PORT
         value: 10000
-      - key: TELEGRAM_BOT_TOKEN
-        sync: false
       - key: NODE_ENV
         value: production
+      - key: TELEGRAM_BOT_TOKEN
+        sync: false
