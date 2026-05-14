@@ -1,11 +1,11 @@
 services:
   - type: web
-    name: bot_sarsh-3
+    name: telegram-search-bot
     env: node
     region: oregon
     plan: free
-    buildCommand: echo "no build needed"
-    startCommand: node --enable-source-maps ./dist/index.mjs
+    buildCommand: npm install && npm run build
+    startCommand: npm run start
     envVars:
       - key: PORT
         value: 10000
