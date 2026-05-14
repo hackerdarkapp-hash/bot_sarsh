@@ -4,8 +4,8 @@ services:
     env: node
     region: oregon
     plan: free
-    buildCommand: npm install && npm run build
-    startCommand: npm run start
+    buildCommand: echo "no build needed"
+    startCommand: node --enable-source-maps ./dist/index.mjs
     envVars:
       - key: PORT
         value: 10000
